@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>대체거래소</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.0/lottie.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.8/ScrollMagic.min.js"></script>
@@ -12,20 +12,24 @@
             margin: 0;
             padding: 0;
             background-color: #024164;
+            -webkit-overflow-scrolling: touch;
         }
         .container {
             width: 540px;
             margin: 0 auto;
+            overflow-x: hidden;
         }
         #lottie-container {
             width: 540px;
             height: 100vh;
+            will-change: transform;
         }
         .content-image {
             width: 540px;
             transform: translateY(100px);
             opacity: 0;
             transition: all 1s ease-out;
+            will-change: transform, opacity;
         }
         .content-image.visible {
             transform: translateY(0);
@@ -55,12 +59,15 @@
         // Lottie 애니메이션을 위한 씬
         new ScrollMagic.Scene({
             triggerElement: "#lottie-container",
-            duration: '100%',
+            duration: '200%',
             triggerHook: 0
         })
         .setPin("#lottie-container")
         .on("progress", function(e) {
-            animation.goToAndStop(e.progress * animation.totalFrames, true);
+            requestAnimationFrame(() => {
+                const frame = Math.min(Math.floor(e.progress * animation.totalFrames), animation.totalFrames - 1);
+                animation.goToAndStop(frame, true);
+            });
         })
         .addTo(controller);
 
@@ -70,7 +77,9 @@
             triggerHook: 0.8
         })
         .on("enter", function() {
-            document.querySelector('.content-image').classList.add('visible');
+            requestAnimationFrame(() => {
+                document.querySelector('.content-image').classList.add('visible');
+            });
         })
         .addTo(controller);
     </script>

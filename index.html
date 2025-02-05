@@ -19,30 +19,45 @@
             max-width: 540px;
             margin: 0 auto;
             overflow-x: hidden;
-            padding: 0 0px;
             box-sizing: border-box;
+            min-height: 100vh; /* 전체 뷰포트 높이 확보 */
         }
         #lottie-container {
             width: 100%;
             height: 100vh;
+            position: relative;
+            z-index: 2;
+        }
+        .anchor-wrapper {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            max-width: 540px;
+            margin: 0 auto;
+            z-index: 1000;
+            background-color: #024164;
+        }
+        .anchor-image {
+            width: 100%;
+            height: auto;
+            display: block;
             will-change: transform;
+        }
+        .content-wrapper {
+            position: relative;
+            width: 100%;
+            z-index: 1;
         }
         .content-image {
             width: 100%;
             height: auto;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 1s ease-out;
-            will-change: transform, opacity;
-        }
-        .content-image.visible {
-            transform: translateY(0);
-            opacity: 1;
+            display: block;
         }
 
         @media screen and (max-width: 540px) {
             .container {
-                padding: 0 0px;
+                padding: 0;
             }
         }
     </style>
@@ -50,48 +65,108 @@
 <body>
     <div class="container">
         <div id="lottie-container"></div>
-        <img src="대체거래소 안내.png" class="content-image" alt="대체거래소 안내">
+    </div>
+    <div class="anchor-wrapper">
+        <img src="앵커.png" class="anchor-image" alt="대체거래소 앵커">
+    </div>
+    <div class="container">
+        <div class="content-wrapper">
+            <img src="콘텐츠.png" class="content-image" alt="대체거래소 콘텐츠">
+        </div>
     </div>
 
     <script>
-        // Lottie 애니메이션 초기화
-        const animation = lottie.loadAnimation({
-            container: document.getElementById('lottie-container'),
-            renderer: 'svg',
-            loop: false,
-            autoplay: false,
-            path: '대체거래소.json'
+        let currentProgress = 0;
+        let targetProgress = 0;
+        let animation;
+
+        // Lottie 애니메이션 미리 로드
+        async function preloadLottie() {
+            try {
+                const response = await fetch('대체거래소.json');
+                const animationData = await response.json();
+                
+                animation = lottie.loadAnimation({
+                    container: document.getElementById('lottie-container'),
+                    renderer: 'svg',
+                    loop: false,
+                    autoplay: false,
+                    animationData: animationData
+                });
+
+                // ScrollMagic 설정
+                initScrollMagic();
+                
+            } catch (error) {
+                console.error('Lottie 로드 실패:', error);
+            }
+        }
+
+        function initScrollMagic() {
+            const controller = new ScrollMagic.Controller();
+
+            // 부드러운 애니메이션을 위한 RAF 루프
+            function animate() {
+                const diff = targetProgress - currentProgress;
+                currentProgress += diff * 0.1; // 부드러운 감속 효과
+
+                if (Math.abs(diff) > 0.001) {
+                    const frame = Math.min(
+                        Math.round(currentProgress * animation.totalFrames),
+                        animation.totalFrames - 1
+                    );
+                    animation.goToAndStop(frame, true);
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            new ScrollMagic.Scene({
+                triggerElement: "#lottie-container",
+                duration: window.innerHeight * 2, // 스크롤 구간 확장
+                triggerHook: 0
+            })
+            .setPin("#lottie-container")
+            .on("progress", function(e) {
+                targetProgress = e.progress;
+                requestAnimationFrame(animate);
+            })
+            .addTo(controller);
+        }
+
+        // 이미지 애니메이션 최적화
+        function observeImages() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.visibility = 'visible';
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0,
+                rootMargin: "0px"
+            });
+
+            // 초기에는 콘텐츠 이미지만 관찰
+            const contentImage = document.querySelector('.content-image');
+            contentImage.style.visibility = 'hidden';
+            observer.observe(contentImage);
+        }
+
+        // 초기화
+        window.addEventListener('load', () => {
+            preloadLottie();
+            observeImages();
         });
 
-        // ScrollMagic 컨트롤러 초기화
-        const controller = new ScrollMagic.Controller();
-
-        // Lottie 애니메이션을 위한 씬
-        new ScrollMagic.Scene({
-            triggerElement: "#lottie-container",
-            duration: '150%',
-            triggerHook: 0
-        })
-        .setPin("#lottie-container")
-        .on("progress", function(e) {
-            requestAnimationFrame(() => {
-                const frame = Math.min(Math.floor(e.progress * animation.totalFrames), animation.totalFrames - 1);
-                animation.goToAndStop(frame, true);
-            });
-        })
-        .addTo(controller);
-
-        // 이미지 애니메이션을 위한 씬
-        new ScrollMagic.Scene({
-            triggerElement: ".content-image",
-            triggerHook: 0.8
-        })
-        .on("enter", function() {
-            requestAnimationFrame(() => {
-                document.querySelector('.content-image').classList.add('visible');
-            });
-        })
-        .addTo(controller);
+        // 리사이즈 대응
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                location.reload();
+            }, 250);
+        });
     </script>
 </body>
 </html> 

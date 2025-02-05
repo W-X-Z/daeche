@@ -53,6 +53,8 @@
             width: 100%;
             height: auto;
             display: block;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
         }
 
         @media screen and (max-width: 540px) {
@@ -122,13 +124,24 @@
 
             new ScrollMagic.Scene({
                 triggerElement: "#lottie-container",
-                duration: window.innerHeight * 2, // 스크롤 구간 확장
+                duration: window.innerHeight * 1.2, // 스크롤 구간 축소
                 triggerHook: 0
             })
             .setPin("#lottie-container")
             .on("progress", function(e) {
                 targetProgress = e.progress;
                 requestAnimationFrame(animate);
+            })
+            .addTo(controller);
+
+            // 콘텐츠 전환을 위한 새로운 Scene 추가
+            new ScrollMagic.Scene({
+                triggerElement: ".content-wrapper",
+                triggerHook: 1, // 화면 하단에서 시작
+                reverse: false
+            })
+            .on("enter", function() {
+                document.querySelector('.content-image').style.opacity = 1;
             })
             .addTo(controller);
         }

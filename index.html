@@ -54,7 +54,14 @@
             height: auto;
             display: block;
             opacity: 0;
-            transition: opacity 0.3s ease-out;
+            transform: translateY(20px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+            will-change: opacity, transform;
+        }
+
+        .content-image.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         @media screen and (max-width: 540px) {
@@ -107,10 +114,9 @@
         function initScrollMagic() {
             const controller = new ScrollMagic.Controller();
 
-            // 부드러운 애니메이션을 위한 RAF 루프
             function animate() {
                 const diff = targetProgress - currentProgress;
-                currentProgress += diff * 0.1; // 부드러운 감속 효과
+                currentProgress += diff * 0.1;
 
                 if (Math.abs(diff) > 0.001) {
                     const frame = Math.min(
@@ -122,9 +128,10 @@
                 }
             }
 
+            // Lottie 애니메이션 Scene
             new ScrollMagic.Scene({
                 triggerElement: "#lottie-container",
-                duration: window.innerHeight * 1.2, // 스크롤 구간 축소
+                duration: window.innerHeight * 1.2,
                 triggerHook: 0
             })
             .setPin("#lottie-container")
@@ -134,42 +141,24 @@
             })
             .addTo(controller);
 
-            // 콘텐츠 전환을 위한 새로운 Scene 추가
+            // 콘텐츠 전환 Scene
             new ScrollMagic.Scene({
                 triggerElement: ".content-wrapper",
-                triggerHook: 1, // 화면 하단에서 시작
-                reverse: false
+                triggerHook: 0.8,
+                reverse: true
             })
             .on("enter", function() {
-                document.querySelector('.content-image').style.opacity = 1;
+                document.querySelector('.content-image').classList.add('visible');
+            })
+            .on("leave", function() {
+                document.querySelector('.content-image').classList.remove('visible');
             })
             .addTo(controller);
-        }
-
-        // 이미지 애니메이션 최적화
-        function observeImages() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.visibility = 'visible';
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, {
-                threshold: 0,
-                rootMargin: "0px"
-            });
-
-            // 초기에는 콘텐츠 이미지만 관찰
-            const contentImage = document.querySelector('.content-image');
-            contentImage.style.visibility = 'hidden';
-            observer.observe(contentImage);
         }
 
         // 초기화
         window.addEventListener('load', () => {
             preloadLottie();
-            observeImages();
         });
 
         // 리사이즈 대응
